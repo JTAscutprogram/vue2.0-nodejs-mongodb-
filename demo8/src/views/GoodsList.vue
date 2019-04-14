@@ -38,13 +38,13 @@
                   <!-- 懒加载还可以用于一个页面图片比较多，当没有滚动到图片时不会加载，滚动到才加载
                   这样不会一开始为了加载大量静态资源耗费不必要请求，
                   loading也会提升用户体验告诉用户资源正在加载-->
-                  <img  v-lazy ="'/static/'+item.prodcutImg" alt="">
+                  <img  v-lazy ="'/static/'+item.productImage" alt="">
                   </a>
               </div>
               <div class="main">
               
                 <div class="name">{{item.productName}}</div>
-                <div class="price">{{item.productPrice}}</div>
+                <div class="price">{{item.salePrice}}</div>
                 <div class="btn-area">
                   <a href="javascript:;" class="btn btn--m">加入购物车</a>
                 </div>
@@ -116,10 +116,13 @@ export default {
      methods:{
        //通过axios获取本地测试数据
        getGoodsList(){
-          axios.get('/goods').then(result => {
-            var res  =result.data; 
-            this.goodslist = res.result;
-            
+          axios.get('/goods').then((response)=> {
+            var res  =response.data; 
+            if(res.status == '0'){
+              this.goodslist = res.result.list;
+            }else{
+              this.goodslist = [];
+            }
             console.log(this.goodslist);
             
           });
