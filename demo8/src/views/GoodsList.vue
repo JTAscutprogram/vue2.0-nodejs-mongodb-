@@ -9,7 +9,7 @@
     <div class="filter-nav">
       <span class="sortby">Sort by:</span>
       <a href="javascript:void(0)" class="default cur">Default</a>
-      <a href="javascript:void(0)" class="price">Price <svg class="icon icon-arrow-short"><use xlink:href="#icon-arrow-short"></use></svg></a>
+      <a @click ="sortGoods" href="javascript:;">Price <svg class="icon icon-arrow-short"><use xlink:href="#icon-arrow-short"></use></svg></a>
       <a href="javascript:void(0)" class="filterby stopPop" @click ="showFilterPop">Filter by</a>
     </div>
     <div class="accessory-result">
@@ -17,6 +17,7 @@
       <!-- 响应式布局，当窗口小到一定程度 左边菜单会隐藏-->
       <div class="filter stopPop" id="filter" v-bind:class ="{'filterby-show':filterBy}">
         <dl class="filter-price">
+          
           <dt>Price:</dt>
           <dd><a href="javascript:void(0)" v-bind:class ="{'cur':priceChecked == 'All'}">All</a></dd>
           <dd v-for ="(price,index) in priceFilter" >
@@ -54,6 +55,9 @@
            
             
           </ul>
+          <div class = "load-more" v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="20">
+              加载中
+          </div>
         </div>
       </div>
 
@@ -64,6 +68,21 @@
     <nav-footer></nav-footer>
   </div>
 </template>
+<style>
+  .list-warp ul ::after{
+    clear:both;
+    content:'';
+    height: 0;
+    display: block;
+    visibility: hidden;
+  }
+  .load-more{
+    height: 100px;
+    line-height: 100px;
+    text-align: center;
+  }
+</style>
+
 <script>
 //导入样式
     import "./../assets/css/base.css"; //assets和外面的static都是存放静态资源的
@@ -80,6 +99,11 @@ export default {
      data(){
          return{
             goodslist:[],                       //用于存放商品列表
+            sortFlag:true,                      //用于排序
+            page:1,                             //当前页面第几页，分页用
+            pageSize:8,                         //页面大小
+            busy:false,                         //用于分页vue-infinite-scroll滚动延迟加载判断
+                                                //如果busy为false则说明滚动禁用，
             priceFilter:[                       //用于存放过滤器结构
               {
                 startPrice:'0.00',
@@ -115,17 +139,43 @@ export default {
      },
      methods:{
        //通过axios获取本地测试数据
-       getGoodsList(){
-          axios.get('/goods').then((response)=> {
+       getGoodsList(flag){
+         var param = {
+           page:this.page,
+           pageSize:this.pageSize,
+           priceLevel:this.priceChecked,
+           sort:this.sortFlag?1:-1
+         }
+          axios.get('/goods',{
+            params:param
+          }).then((response)=> {
             var res  =response.data; 
             if(res.status == '0'){
-              this.goodslist = res.result.list;
+              if(flag){
+              this.goodslist = this.goodslist.concat( res.result.list);//累加页面的goodslist数据从零开始
+                  if(res.result.count ==0){
+                    this.busy = true; //如果是零条就把busy启动滚动分页
+                  }else{
+                    this.busy = false;
+                  }
+              }else{
+                this.goodslist = res.result.list;   //第一次进入页面第一页 不需要数据拼接直接返回数据
+                this.busy = false;
+              }
             }else{
               this.goodslist = [];
             }
             console.log(this.goodslist);
             
           });
+       },
+       //实现排序
+       sortGoods(){
+         
+         this.sortFlag=!this.sortFlag;
+         this.page = 1;
+         this.getGoodsList();
+        
        },
        //实现响应式布局页面缩放时点击价格过滤的视图呈现
        showFilterPop(){
@@ -141,7 +191,17 @@ export default {
        //选中价格菜单的某一价格
        setPriceFilter(index){
          this.priceChecked=index;
-         this.closePop();
+         this.page = 1;
+         this.getGoodsList();
+   
+       },
+       loadMore(){
+         
+         this.busy = true;
+         setTimeout(()=>{
+            this.page++; //实现分页
+            this.getGoodsList(true); //这里page已经累加了会往另一页跳
+         },500)
        }
      }
 }

@@ -30,16 +30,33 @@ router.get("/",function(req,res,next){
     //分页功能
     //通过前端请求头获取当前传入的参数一般都是通过url获取param 但是这里进行了封装
     //这里获取的是字符串格式，而下面的limit需要的是数字
-    /*let page = parseInt(req.param("page"));  //获取当前第几页
+    let page = parseInt(req.param("page"));  //获取当前第几页
+    let priceLevel = req.param("priceLevel");
     let pageSize = parseInt(req.param("pageSize"));  //获取页面大小（每页几个商品）
     var sort = parseInt(req.param("sort"));
     let skip  = (page-1)*pageSize;    //默认跳过skip条  Skip是一个索引值
     //page为1 skip跳过0条 limit每页几个组件比如说8
     //分页就是每页最多显示几条数据，比如每页都只能显示8条然后数据查询的时候就会跳过几条数据
     //page为2，skip跳过8条数据 因为前面8个数据已经被第一个page显示过了第二页从9开始拿数据
-    let goodsModel =  Goods.find(params).skip(skip).limit(pageSize)
     let params = {};
-    let goodsModel =  Goods.find(params);
+    let goodsModel =  Goods.find(params).skip(skip).limit(pageSize)
+    var priceGt = '',priceLte = '';
+    if(priceLevel != "all"){
+        switch(priceLevel){
+            case '0':priceGt = 0 ;priceLte = 500; break;
+            case '1':priceGt = 500 ;priceLte = 1000; break;
+            case '2':priceGt = 1000 ;priceLte = 1500; break;
+            case '3':priceGt = 1500 ;priceLte = 2000; break;
+        }
+        params = {
+            salePrice : {
+                $gt:priceGt,
+                $let:priceLte
+            }
+        }
+    }
+    
+    
     goodsModel.sort({'salePrice':sort});     //确定对哪个值升序降序(sort 1是升序 -1是降序)
     goodsModel.exec(function(err,doc){   //进行分页
         if(err){
@@ -56,14 +73,17 @@ router.get("/",function(req,res,next){
                 result:{
                     count:doc.length,   //总条数
                     list:doc
-                }
+                },
+               
+
             })
         }
 
-    })     */
-
-
-    Goods.find( {} ,function(err,doc){   //查询数据库函数good.find()两个参数第一个为查询条件，第二个为回调函数
+    })    
+     
+    
+       /* 
+    let GoodsModel =Goods.find( {} ,function(err,doc){   //查询数据库函数good.find()两个参数第一个为查询条件，第二个为回调函数
         if(err){
             res.json({
                 status:'1',
@@ -82,7 +102,8 @@ router.get("/",function(req,res,next){
             })
         }
 
-    })     
+    })   
+   */
 
 
 })
