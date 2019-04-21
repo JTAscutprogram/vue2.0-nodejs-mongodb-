@@ -22,7 +22,8 @@ mongoose.connection.on("disconnected",function(){
     console.log("mongdb disconnected success");
 });
 //获取路由访问"/"的时候获取商品数据
-//router.get第一个参数为二级路由访问格式，第二个参数是回调，req res next查看官网API运用
+//router.get第一个参数为二级路由访问格式，第二个参数是回调，req res next查看官网API运用,
+//这是获取商品信息以及分页功能，默认的goods功能
 router.get("/",function(req,res,next){
     //res.send("hello , good list ");
     
@@ -32,6 +33,7 @@ router.get("/",function(req,res,next){
     //这里获取的是字符串格式，而下面的limit需要的是数字
     let page = parseInt(req.param("page"));  //获取当前第几页
     let priceLevel = req.param("priceLevel");
+    console.log(priceLevel);
     let pageSize = parseInt(req.param("pageSize"));  //获取页面大小（每页几个商品）
     var sort = parseInt(req.param("sort"));
     let skip  = (page-1)*pageSize;    //默认跳过skip条  Skip是一个索引值
@@ -39,23 +41,24 @@ router.get("/",function(req,res,next){
     //分页就是每页最多显示几条数据，比如每页都只能显示8条然后数据查询的时候就会跳过几条数据
     //page为2，skip跳过8条数据 因为前面8个数据已经被第一个page显示过了第二页从9开始拿数据
     let params = {};
-    let goodsModel =  Goods.find(params).skip(skip).limit(pageSize)
     var priceGt = '',priceLte = '';
-    if(priceLevel != "all"){
+    if(priceLevel != "All"){
         switch(priceLevel){
-            case '0':priceGt = 0 ;priceLte = 500; break;
-            case '1':priceGt = 500 ;priceLte = 1000; break;
-            case '2':priceGt = 1000 ;priceLte = 1500; break;
-            case '3':priceGt = 1500 ;priceLte = 2000; break;
-        }
+            case '0':priceGte = 0 ;priceLte = 100; break;
+            case '1':priceGte = 100 ;priceLte = 500; break;
+            case '2':priceGte = 500 ;priceLte = 1000; break;
+            case '3':priceGte = 1000 ;priceLte = 5000; break;
+        };
         params = {
-            salePrice : {
-                $gt:priceGt,
-                $let:priceLte
+            salePrice : {   //条件查询，传入查询参数gte大于等于，lte小于等于
+                $gte:priceGte,
+                $lte:priceLte
             }
-        }
-    }
+        };
+    };
     
+    let goodsModel =  Goods.find(params).skip(skip).limit(pageSize);
+   
     
     goodsModel.sort({'salePrice':sort});     //确定对哪个值升序降序(sort 1是升序 -1是降序)
     goodsModel.exec(function(err,doc){   //进行分页
@@ -106,6 +109,58 @@ router.get("/",function(req,res,next){
    */
 
 
+})
+
+//加入到购物车功能
+router.post("/addCart",function (req,res,text){
+    var userId = '100000077'; //默认登录了，直接拿这个ID来用
+    var productId = req.body.productId;     //获取通过post的产品ID，与 get不同可以通过params获取，post通过body
+    var User = require('../models/user')
+    //第一层回调，获取User信息，使用fineOne找到第一个和查询参数匹配的user信息
+    User.findOne({userId:userId},function (err,userDoc){
+        if(err){        //如果没拿到用户信息 出错
+            res.json({
+                status:'1',
+                msg:err.message
+            })
+        }else{          //如果拿到用户信息
+            console.log("userDoc:" +userDoc);
+            console.log(productId);
+            if(userDoc){
+                    //第二层回调，找到商品的信息，也是fineOne
+                    Goods.findOne({productId:productId},function (err1,doc){
+                        if(err1){
+                            res.json({
+                                status:"1",
+                                msg:err1.message
+                            })
+                        }
+                        else{
+                            if(doc){
+                                doc.productNum = 1;//用户选中的商品之后由于商品的数据没有数量字段这里默认加一个1
+                                doc.checked = 1;    
+                                userDoc.cartList.push(doc);  //加到user表中
+                                //第三层回调
+                                userDoc.save(function (err2,doc2){
+                                    if(err2){
+                                        res.json({
+                                            status:'1',
+                                            msg:err2.message
+                                        })
+                                    }else{
+                                        res.json({
+                                            status:'0',
+                                            msg:'',
+                                            result:'success'
+                                        })
+                                    }
+                                })
+                            }
+                        }
+                    })
+            }
+        }
+    })
 })
 //这里一定要在底下module.exports输出当前的路由，如果不输出的话APP.use require得到的是空对象
 module.exports = router;

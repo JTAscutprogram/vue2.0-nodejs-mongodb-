@@ -47,7 +47,7 @@
                 <div class="name">{{item.productName}}</div>
                 <div class="price">{{item.salePrice}}</div>
                 <div class="btn-area">
-                  <a href="javascript:;" class="btn btn--m">加入购物车</a>
+                  <a href="javascript:;" class="btn btn--m" @click ="addCart(item.productId)">加入购物车</a>
                 </div>
               </div>
             </li>
@@ -56,7 +56,7 @@
             
           </ul>
           <div class = "load-more" v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="20">
-              加载中
+              <img src="./../assets/loading-spinning-bubbles.svg" alt="">
           </div>
         </div>
       </div>
@@ -102,11 +102,16 @@ export default {
             sortFlag:true,                      //用于排序
             page:1,                             //当前页面第几页，分页用
             pageSize:8,                         //页面大小
+            loading:false,                      //加载图片，默认不显示，调用接口的时候显示
             busy:false,                         //用于分页vue-infinite-scroll滚动延迟加载判断
                                                 //如果busy为false则说明滚动禁用，
             priceFilter:[                       //用于存放过滤器结构
               {
                 startPrice:'0.00',
+                endPrice:'100.00'
+              },
+              {
+                startPrice:'100.00',
                 endPrice:'500.00'
               },
               {
@@ -115,7 +120,7 @@ export default {
               },
               {
                 startPrice:'1000.00',
-                endPrice:'1500.00'
+                endPrice:'5000.00'
               }
               
             ],
@@ -146,9 +151,11 @@ export default {
            priceLevel:this.priceChecked,
            sort:this.sortFlag?1:-1
          }
+         this.loading = true;   //调用接口请求数据的时候显示加载
           axios.get('/goods',{
             params:param
           }).then((response)=> {
+            this.loading = false; //请求数据完成 ，关闭加载显示
             var res  =response.data; 
             if(res.status == '0'){
               if(flag){
@@ -165,7 +172,7 @@ export default {
             }else{
               this.goodslist = [];
             }
-            console.log(this.goodslist);
+           // console.log(this.goodslist);
             
           });
        },
@@ -191,6 +198,7 @@ export default {
        //选中价格菜单的某一价格
        setPriceFilter(index){
          this.priceChecked=index;
+         
          this.page = 1;
          this.getGoodsList();
    
@@ -202,7 +210,19 @@ export default {
             this.page++; //实现分页
             this.getGoodsList(true); //这里page已经累加了会往另一页跳
          },500)
-       }
+       },
+        addCart(productId){
+          axios.post("/goods/addCart",{
+            productId:productId
+          }).then((res)=>{
+            if(res.status == '0'){
+              console.log("succ");
+            }else{
+              console.log("msg:"+res.msg);
+            }
+          })
+        }
+
      }
 }
 </script>
