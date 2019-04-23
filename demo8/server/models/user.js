@@ -1,3 +1,4 @@
+    
 var mongoose = require('mongoose');
 
 var userSchema = new mongoose.Schema({
@@ -18,4 +19,4 @@ var userSchema = new mongoose.Schema({
     "addressList":Array
 })
 
-module.exports = mongoose.model('User',userSchema);s
+module.exports = mongoose.model('User',userSchema);

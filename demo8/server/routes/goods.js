@@ -104,12 +104,31 @@ router.get("/",function(req,res,next){
                 }
             })
         }
-
     })   
    */
 
 
 })
+
+function createCartListItem(doc){
+    var cartListItem = {
+        "productId" : String,
+        "productName" :String,
+        "salePrice":String,
+        "productImage":String,
+        "checked":String,
+        "productNum":String
+    }
+   
+    cartListItem["productId"] = doc.productId;
+    cartListItem["productName"] = doc.productName;
+    cartListItem["salePrice"] = doc.salePrice;
+    cartListItem["productImage"] = doc.productImage;
+    cartListItem["productNum"] = '1';//用户选中的商品之后由于商品的数据没有数量字段这里默认加一个1
+    cartListItem["checked" ]= '1'; 
+
+    return cartListItem;
+}
 
 //加入到购物车功能
 router.post("/addCart",function (req,res,text){
@@ -124,40 +143,77 @@ router.post("/addCart",function (req,res,text){
                 msg:err.message
             })
         }else{          //如果拿到用户信息
-            console.log("userDoc:" +userDoc);
-            console.log(productId);
+            //console.log("userDoc:" +userDoc);
+            //console.log(productId);
+
             if(userDoc){
-                    //第二层回调，找到商品的信息，也是fineOne
-                    Goods.findOne({productId:productId},function (err1,doc){
+                let goodsItem = '';
+                userDoc.cartList.forEach(item => {  //遍历cartList数组如果加入购物车的商品已经存在
+                    if(item.productId == productId){
+                        goodsItem = item;
+                        item.productNum++;          //如果cartList已经存在了，只需要对productNum++就行了
+                    }
+                });
+                if(goodsItem){      //如果购物车里存在商品，对num++后直接save
+                                    //由于上面已经++过了 不需要加一操作直接save
+                    userDoc.save(function (err1,doc1){
                         if(err1){
                             res.json({
-                                status:"1",
+                                status:'1',
                                 msg:err1.message
+                                
+                            })
+                           // console.log("userDoc save error");
+                        }else{
+                            res.json({
+                                status:'0',
+                                msg:'',
+                                result:'success'
+                            })
+                          //  console.log("userDoc save success");
+                        }
+                    })
+                }else{
+                        //如果购物车里的cartList不存在该商品，需要push一次再save
+                        //第二层回调，找到商品的信息，也是fineOne
+                    Goods.findOne({productId:productId},function (err2,doc2){
+                        if(err2){
+                            res.json({
+                                status:"1",
+                                msg:err2.message
                             })
                         }
                         else{
-                            if(doc){
-                                doc.productNum = 1;//用户选中的商品之后由于商品的数据没有数量字段这里默认加一个1
-                                doc.checked = 1;    
-                                userDoc.cartList.push(doc);  //加到user表中
+                            if(doc2){
+                                
+                               //这里cartList里的good多了productNum与checked字段，
+                               //所以需要对获取的goods json对象进行操作，这里用一个函数封装了
+                                var cartListItem = createCartListItem(doc2);
+                                console.log(cartListItem);
+                                userDoc.cartList.push(cartListItem);  //加到user表中
                                 //第三层回调
-                                userDoc.save(function (err2,doc2){
-                                    if(err2){
+                                userDoc.save(function (err3,doc3){
+                                    if(err3){
                                         res.json({
                                             status:'1',
-                                            msg:err2.message
+                                            msg:err3.message
+                                            
                                         })
+                                       // console.log("userDoc save error");
                                     }else{
                                         res.json({
                                             status:'0',
                                             msg:'',
                                             result:'success'
                                         })
+                                      //  console.log("userDoc save success");
                                     }
                                 })
                             }
                         }
                     })
+                }
+                    
             }
         }
     })
