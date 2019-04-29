@@ -9,7 +9,9 @@
     <div class="filter-nav">
       <span class="sortby">Sort by:</span>
       <a href="javascript:void(0)" class="default cur">Default</a>
-      <a @click ="sortGoods" href="javascript:;">Price <svg class="icon icon-arrow-short"><use xlink:href="#icon-arrow-short"></use></svg></a>
+      <a @click ="sortGoods" href="javascript:;">Price
+        
+      </a>
       <a href="javascript:void(0)" class="filterby stopPop" @click ="showFilterPop">Filter by</a>
     </div>
     <div class="accessory-result">
@@ -64,7 +66,30 @@
     </div>
   </div>
 </div>
-      <div class = "md-overlay" v-show ="overLayFlag" @click="closePop" ></div>
+      <div class = "md-overlay" v-show ="overLayFlag" @click="closePop" >
+
+      </div>
+      <modal v-bind:mdShow ="mdShow" v-on:close="closeModal">
+        <p slot = "message">
+          请先登录否则无法控制购物车
+        </p>
+        <div slot = "btnGroup">
+            <a class = "btn btn-m" href = "javascript:;" @click="mdShow=false">关闭</a>
+        </div>
+      </modal>
+
+      <modal v-bind:mdShow ="mdShowCart" v-on:close="closeModal">
+        <p slot = "message">
+           <svg class="icon-status-ok">
+              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-status-ok"></use>
+            </svg>
+            <span>加入购物车成功</span>
+        </p>
+        <div slot = "btnGroup">
+            <a class = "btn btn-m" href = "javascript:;" @click="mdShowCart=false">继续购物</a>
+            <router-link class = "btn btn-m" href = "javascript:;" to="/cart">查看购物车</router-link>
+        </div>
+      </modal>
     <nav-footer></nav-footer>
   </div>
 </template>
@@ -81,6 +106,11 @@
     line-height: 100px;
     text-align: center;
   }
+  .btn:hover{
+    background-color:#ff1516;
+    transition: all .3s ease-out
+  }
+ 
 </style>
 
 <script>
@@ -93,6 +123,7 @@
     import NavHeader from '@/components/NavHeader';
     import NavFooter from '@/components/NavFooter';
     import NavBread from '@/components/NavBread';
+    import Modal from '@/components/Modal';
     import axios from 'axios';
 export default {
     
@@ -102,9 +133,12 @@ export default {
             sortFlag:true,                      //用于排序
             page:1,                             //当前页面第几页，分页用
             pageSize:8,                         //页面大小
+            mdShow:false,                       //控制购物失败模态框显示
+            mdShowCart:false,                   //控制购物成功模态框显示
             loading:false,                      //加载图片，默认不显示，调用接口的时候显示
             busy:false,                         //用于分页vue-infinite-scroll滚动延迟加载判断
                                                 //如果busy为false则说明滚动禁用，
+
             priceFilter:[                       //用于存放过滤器结构
               {
                 startPrice:'0.00',
@@ -137,12 +171,15 @@ export default {
      components:{
          NavHeader,       //头部组件载入
          NavFooter,       //底部组件载入
-         NavBread         //面包屑组件载入
+         NavBread ,        //面包屑组件载入
+         Modal             //引入全局模态框
      },
      mounted: function (){
         this.getGoodsList();
+    
      },
      methods:{
+       
        //通过axios获取本地测试数据
        getGoodsList(flag){
          var param = {
@@ -152,7 +189,7 @@ export default {
            sort:this.sortFlag?1:-1
          }
          this.loading = true;   //调用接口请求数据的时候显示加载
-          axios.get('/goods',{
+          axios.get('/goods/list',{
             params:param
           }).then((response)=> {
             this.loading = false; //请求数据完成 ，关闭加载显示
@@ -211,6 +248,7 @@ export default {
             this.getGoodsList(true); //这里page已经累加了会往另一页跳
          },500)
        },
+       //添加购物车请求
         addCart(productId){
           axios.post("/goods/addCart",{
             productId:productId
@@ -218,10 +256,20 @@ export default {
             //console.log(res);
             if(res.data.status == 0){
               console.log("成功");
+              this.mdShowCart = true;
+            }else if (res.data.status == 10001){
+              console.log("未登录");
+              //这里做了登录拦截，如果未登录状态企图添加购物车会被侦测而返回信息
+              this.mdShow = true;
             }else{
-              console.log("失败");
+              console.log("失败")
             }
           })
+        },
+        //全局模态框子组件通信，这里是点击关闭之后触发
+        closeModal(){
+            this.mdShow = false;
+          
         }
 
      }

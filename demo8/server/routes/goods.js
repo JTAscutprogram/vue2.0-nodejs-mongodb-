@@ -24,7 +24,7 @@ mongoose.connection.on("disconnected",function(){
 //获取路由访问"/"的时候获取商品数据
 //router.get第一个参数为二级路由访问格式，第二个参数是回调，req res next查看官网API运用,
 //这是获取商品信息以及分页功能，默认的goods功能
-router.get("/",function(req,res,next){
+router.get("/list",function(req,res,next){
     //res.send("hello , good list ");
     
     //这里可以获取前端的排序参数，对数据进行处理
