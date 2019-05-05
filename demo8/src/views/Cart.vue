@@ -123,7 +123,7 @@
                 Item total: <span class="total-price">{{totalPrice|currency('$')}}</span>
               </div>
               <div class="btn-wrap">
-                <a class="btn btn--red">Checkout</a>
+                <a class="btn btn--red" :class="{'btn--dis':checkedCount == 0}" @click="checkOut">Checkout</a>
               </div>
             </div>
           </div>
@@ -199,7 +199,7 @@
           currency:currency //使用导入的js函数
         },*/
         computed:{
-          totalPrice(){
+          totalPrice(){   //用于计算当前选中商品总价格  实时计算
             var money = 0;
             this.cartList.forEach((item)=>{
                 if(item.checked == '1'){
@@ -212,7 +212,7 @@
             
               return this.checkedCount == this.cartList.length;//计算当前是否全选
           },
-          checkedCount(){
+          checkedCount(){ //用于计算选中商品数量
             var i = 0;
             this.cartList.forEach((item)=>{
               if(item.checked == '1'){
@@ -224,6 +224,13 @@
           }
         },
         methods:{
+          checkOut(){   //checkOut按钮绑定地址列表跳转函数
+            if(this.checkOut() > 0){  //如果没有商品选中，则禁用跳转
+              this.$router.push({     //如果选择某些商品，这个router。push封装了history的操作
+                path:"/address"
+              })
+            }
+          },
             init(){
                 axios.get("/users/cartList").then((res)=>{
                     let result = res.data;        //页面初始函数，获取用户商品列表信息通过axios
